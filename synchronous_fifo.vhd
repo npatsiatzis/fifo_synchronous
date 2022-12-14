@@ -9,7 +9,7 @@ use ieee.math_real.all;
 entity synchronous_fifo is
 	generic (
 			g_width : natural :=8;
-			g_depth : natural :=32);
+			g_depth : natural :=8);
 	port (
 			i_clk_wr : in std_ulogic;
 			i_rst_wr : in std_ulogic;

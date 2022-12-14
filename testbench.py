@@ -1,6 +1,6 @@
 import cocotb
 from cocotb.clock import Clock
-from cocotb.triggers import Timer,RisingEdge,FallingEdge,ClockCycles
+from cocotb.triggers import Timer,RisingEdge,FallingEdge,ClockCycles,ReadWrite,ReadOnly
 from cocotb.result import TestFailure
 import random
 from cocotb_coverage.coverage import CoverCross,CoverPoint,coverage_db
@@ -54,11 +54,58 @@ async def reset(dut,cycles=1):
 	dut.i_data.value = 0
 
 	await ClockCycles(dut.i_clk_wr,cycles)
+	await FallingEdge(dut.i_clk_wr)
 	dut.i_rst_wr.value = 0
 	dut.i_rst_rd.value = 0
 	await RisingEdge(dut.i_clk_wr)
 	dut._log.info("the core was reset")
 
+
+#test the response when trying to push to a full fifo
+@cocotb.test()
+async def test_overflow(dut):
+	"""Check the overflow condition"""
+
+	cocotb.start_soon(Clock(dut.i_clk_wr, 10, units="ns").start())
+	cocotb.start_soon(Clock(dut.i_clk_rd, 10, units="ns").start())
+	await reset(dut,5)
+
+	wr = 1
+	rd = 0
+	full = 0 
+	empty = 0
+	fifo = []
+	fifo_rd = []
+
+	data = random.randint(0,2**g_width-1)
+	dut.i_wr.value = wr 
+	dut.i_data.value = data
+	dut.i_rd.value = rd 
+	await RisingEdge(dut.i_clk_wr)
+	while(full !=1):
+		data = random.randint(0,2**g_width-1)
+		dut.i_data.value = data
+		fifo.append(int(dut.i_data.value))
+		await RisingEdge(dut.i_clk_wr)
+		full = dut.o_full.value
+
+	for i in range(5):
+		data = random.randint(0,2**g_width-1)
+		print("Tried to push {} while fifo is full".format(data))
+		await RisingEdge(dut.i_clk_wr)
+
+	rd = 1
+	dut.i_rd.value = rd
+	dut.i_wr.value = 0 
+	await RisingEdge(dut.i_clk_rd)
+	while(empty != 1):
+		await RisingEdge(dut.i_clk_rd)
+		empty = dut.o_empty.value
+		fifo_rd.append(int(dut.o_data.value))
+
+	assert not (fifo_rd != fifo),"Wrong operation! Written to fifo {} and read back {}".format(fifo,fifo_rd)
+
+#test the ability to reach the full, empty, overflow and underflow conditions
 @cocotb.test()
 async def test(dut):
 	"""Check results and coverage for dual clock synchronous fifo"""
