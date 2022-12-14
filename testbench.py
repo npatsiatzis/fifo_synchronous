@@ -91,7 +91,6 @@ async def test_overflow(dut):
 
 	for i in range(5):
 		data = random.randint(0,2**g_width-1)
-		print("Tried to push {} while fifo is full".format(data))
 		await RisingEdge(dut.i_clk_wr)
 
 	rd = 1
@@ -103,8 +102,41 @@ async def test_overflow(dut):
 		empty = dut.o_empty.value
 		fifo_rd.append(int(dut.o_data.value))
 
-	assert not (fifo_rd != fifo),"Wrong operation! Written to fifo {} and read back {}".format(fifo,fifo_rd)
+	assert not (fifo_rd != fifo),"Wrong operation! Written to fifo {} and read back {}"\
+	.format(fifo,fifo_rd)
 
+#test the underflow condition
+@cocotb.test()
+async def test_underflow(dut):
+	"""test the response when trying to get from an empty fifo"""
+
+	cocotb.start_soon(Clock(dut.i_clk_wr, 10, units="ns").start())
+	cocotb.start_soon(Clock(dut.i_clk_rd, 10, units="ns").start())
+	await reset(dut,5)
+
+	wr = 1 
+	rd = 0 
+
+	for i in range(2):
+		data = random.randint(0,2**g_width-1)
+		dut.i_wr.value = wr 
+		dut.i_rd.value = rd 
+		dut.i_data.value = data 
+
+		await RisingEdge(dut.i_clk_wr)
+
+	await RisingEdge(dut.i_clk_wr)
+	wr = 0 
+	rd = 1
+	dut.i_wr.value = wr
+	dut.i_rd.value = rd
+	await RisingEdge(dut.i_clk_rd)
+	for i in range(random.randint(3,10)):
+		await RisingEdge(dut.i_clk_rd)
+
+	assert not ((dut.r_addr_r != dut.r_addr_w) and dut.o_underflow !=1),\
+	"Wrong operation! read address is {}, write address is {}, underflow is {}"\
+	.format(dut.r_addr_r,dut.r_addr_w,dut.o_underflow)
 #test the ability to reach the full, empty, overflow and underflow conditions
 @cocotb.test()
 async def test(dut):
