@@ -9,7 +9,7 @@ use ieee.math_real.all;
 entity synchronous_fifo is
 	generic (
 			g_width : natural :=8;
-			g_depth : natural :=8);
+			g_depth : natural :=32);
 	port (
 			i_clk_wr : in std_ulogic;
 			i_rst_wr : in std_ulogic;
@@ -30,14 +30,16 @@ end synchronous_fifo;
 
 architecture arch of synchronous_fifo is
 	constant ADDR_DEPTH :natural := natural(ceil(log2(real(g_depth))));	--parameter of log2 is real valued
+	--signal w_empty_int : std_ulogic;
+	--signal w_full_int : std_ulogic;
 
-	signal r_fill : unsigned(ADDR_DEPTH downto 0);
-	signal r_addr_w : unsigned(ADDR_DEPTH downto 0);
-	alias  w_addr_w : unsigned(ADDR_DEPTH -1 downto 0) is r_addr_w(ADDR_DEPTH-1 downto 0);
-	signal r_addr_r : unsigned(ADDR_DEPTH downto 0);
-	alias w_addr_r : unsigned(ADDR_DEPTH-1 downto 0) is r_addr_r(ADDR_DEPTH-1 downto 0);
+	signal r_fill : unsigned(g_depth downto 0);
+	signal r_addr_w : unsigned(g_depth downto 0);
+	alias  w_addr_w : unsigned(g_depth -1 downto 0) is r_addr_w(g_depth-1 downto 0);
+	signal r_addr_r : unsigned(g_depth downto 0);
+	alias w_addr_r : unsigned(g_depth-1 downto 0) is r_addr_r(g_depth-1 downto 0);
 
-	type fifo_mem is array(0 to g_depth-1) of std_ulogic_vector(g_width -1 downto 0);
+	type fifo_mem is array(0 to 2**g_depth-1) of std_ulogic_vector(g_width -1 downto 0);
 	signal mem : fifo_mem;
 begin
 
@@ -96,7 +98,7 @@ begin
 			o_empty <= '0';	
 		end if;
 
-		if(r_fill = g_depth) then
+		if(r_fill = 2**g_depth) then
 			o_full <= '1';
 		else
 			o_full <= '0';
