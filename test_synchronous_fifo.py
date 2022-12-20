@@ -12,8 +12,9 @@ rtl_dir = tests_dir                                    #path to hdl folder where
 
                                    
 #run tests with generic values for length
-@pytest.mark.parametrize("parameter", [{"g_width": str(i),"g_depth": str(i)} for i in range(4,17,4)])
-def test_fifo(parameter):
+@pytest.mark.parametrize("g_width", [str(i) for i in [4,8,16]])
+@pytest.mark.parametrize("g_depth", [str(i) for i in range(4,9,1)])
+def test_fifo(g_width,g_depth):
 
     module = "testbench"
     toplevel = "synchronous_fifo"   
@@ -21,6 +22,9 @@ def test_fifo(parameter):
         os.path.join(rtl_dir, "synchronous_fifo.vhd"),
         ]
 
+    parameter = {}
+    parameter['g_width'] = g_width
+    parameter['g_depth'] = g_depth
 
 
     run(
@@ -36,7 +40,3 @@ def test_fifo(parameter):
         sim_build="sim_build/"
         + "_".join(("{}={}".format(*i) for i in parameter.items())),
     )
-
-    # if __name__ == "__main__":
-    #   test_bin_bcd(parameter)
-    #     test_bcd_bin(parameter)

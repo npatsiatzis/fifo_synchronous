@@ -1,4 +1,4 @@
---Dual clock FIFO for communicating data between two synchronous clock domains,
+--Dual clock FIFO for communicating data between two syncrhonous clock domains,
 --the write and read domain.
 
 library ieee;
@@ -9,7 +9,7 @@ use ieee.math_real.all;
 entity synchronous_fifo is
 	generic (
 			g_width : natural :=8;
-			g_depth : natural :=32);
+			g_depth : natural :=4);
 	port (
 			i_clk_wr : in std_ulogic;
 			i_rst_wr : in std_ulogic;
@@ -64,7 +64,6 @@ begin
 		if(rising_edge(i_clk_rd)) then
 			if(i_rst_rd = '1') then
 				r_addr_r <= (others => '0');
-				o_data <= (others => '0');
 			else
 				if(i_rd = '1' and  o_empty = '0')then
 					o_data <= mem(to_integer(w_addr_r));
