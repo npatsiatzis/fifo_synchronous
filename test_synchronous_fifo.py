@@ -12,7 +12,7 @@ rtl_dir = tests_dir                                    #path to hdl folder where
 
                                    
 #run tests with generic values for length
-@pytest.mark.parametrize("g_width", [str(i) for i in [4,8,16]])
+@pytest.mark.parametrize("g_width", [str(i) for i in [4,9,4]])
 @pytest.mark.parametrize("g_depth", [str(i) for i in range(4,9,1)])
 def test_fifo(g_width,g_depth):
 
@@ -26,6 +26,7 @@ def test_fifo(g_width,g_depth):
     parameter['g_width'] = g_width
     parameter['g_depth'] = g_depth
 
+    extra_env = {f'PARAM_{k}': str(v) for k, v in parameter.items()}
 
     run(
         python_search=[tests_dir],                         #where to search for all the python test files
@@ -36,7 +37,7 @@ def test_fifo(g_width,g_depth):
         vhdl_compile_args=[vhdl_compile_args],
         toplevel_lang="vhdl",
         parameters=parameter,                              #parameter dictionary
-        extra_env=parameter,
+        extra_env=extra_env,
         sim_build="sim_build/"
         + "_".join(("{}={}".format(*i) for i in parameter.items())),
     )

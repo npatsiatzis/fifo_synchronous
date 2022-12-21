@@ -8,7 +8,7 @@ use ieee.math_real.all;
 
 entity synchronous_fifo is
 	generic (
-			g_width : natural :=8;
+			g_width : natural :=9;
 			g_depth : natural :=4);
 	port (
 			i_clk_wr : in std_ulogic;
@@ -30,8 +30,6 @@ end synchronous_fifo;
 
 architecture arch of synchronous_fifo is
 	constant ADDR_DEPTH :natural := natural(ceil(log2(real(g_depth))));	--parameter of log2 is real valued
-	--signal w_empty_int : std_ulogic;
-	--signal w_full_int : std_ulogic;
 
 	signal r_fill : unsigned(g_depth downto 0);
 	signal r_addr_w : unsigned(g_depth downto 0);
@@ -40,7 +38,7 @@ architecture arch of synchronous_fifo is
 	alias w_addr_r : unsigned(g_depth-1 downto 0) is r_addr_r(g_depth-1 downto 0);
 
 	type fifo_mem is array(0 to 2**g_depth-1) of std_ulogic_vector(g_width -1 downto 0);
-	signal mem : fifo_mem;
+	signal mem : fifo_mem :=(others => (others => '0'));
 begin
 
 	--FIFO write domain
@@ -63,6 +61,7 @@ begin
 	begin
 		if(rising_edge(i_clk_rd)) then
 			if(i_rst_rd = '1') then
+				o_data <= (others => '0');
 				r_addr_r <= (others => '0');
 			else
 				if(i_rd = '1' and  o_empty = '0')then
