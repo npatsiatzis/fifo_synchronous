@@ -29,11 +29,6 @@ def notify():
 # a bin must be hit to considered covered
 @CoverPoint("top.data",xf = lambda x : x.i_data.value, bins = list(range(2**g_width)), at_least=1)
 @CoverPoint("top.wr",xf = lambda x : x.i_wr.value, bins = [True,False], at_least=1)
-@CoverPoint("top.rd",xf = lambda x : x.i_rd.value, bins = [True,False],at_least=1)
-@CoverPoint("top.full",xf = lambda x : x.o_full.value,bins = [True,False],at_least=1)
-@CoverPoint("top.empty",xf = lambda x : x.o_empty.value,bins = [True,False],at_least=1)
-@CoverPoint("top.overflow",xf = lambda x : x.o_overflow.value,bins = [True,False],at_least=1)
-@CoverPoint("top.underflow",xf = lambda x : x.o_underflow.value,bins = [True,False],at_least=1)
 @CoverCross("top.cross", items = ["top.wr","top.data"], at_least=1)
 def number_cover(dut):
 	covered_number.append((dut.i_wr.value,dut.i_data.value))
