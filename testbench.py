@@ -1,6 +1,6 @@
 import cocotb
 from cocotb.clock import Clock
-from cocotb.triggers import Timer,RisingEdge,FallingEdge,ClockCycles,ReadWrite,ReadOnly
+from cocotb.triggers import RisingEdge,FallingEdge,ClockCycles
 from cocotb.queue import QueueEmpty, QueueFull, Queue
 import random
 from cocotb_coverage.coverage import CoverCross,CoverPoint,coverage_db
@@ -60,8 +60,8 @@ async def reset(dut,cycles=1):
 @cocotb.test()
 async def test_behavior(dut):
 
-	cocotb.start_soon(Clock(dut.i_clk_wr, 10, units="ns").start())
-	cocotb.start_soon(Clock(dut.i_clk_rd, 10, units="ns").start())
+	cocotb.start_soon(Clock(dut.i_clk_wr, 5, units="ns").start())
+	cocotb.start_soon(Clock(dut.i_clk_rd, 5, units="ns").start())
 	await reset(dut,5)
 
 	rd_data = 0 
@@ -107,12 +107,12 @@ async def test_behavior(dut):
 
 	dut.i_wr.value =0
 	dut.i_rd.value =1
-	await RisingEdge(dut.i_clk_wr)
+	await RisingEdge(dut.i_clk_rd)
 	while True:
-		await RisingEdge(dut.i_clk_wr)
 		try:
 			rd_data = q.get_nowait()
 			fifo.append(rd_data)
+			await RisingEdge(dut.i_clk_rd)
 			fifo_rd.append(int(dut.o_data.value))
 		except QueueEmpty:
 			break
@@ -120,13 +120,15 @@ async def test_behavior(dut):
 	print("fifo is {}".format(fifo))
 	print("fifo bfm is {}".format(fifo_rd))
 	assert not (fifo_rd != fifo),"Wrong behavior!"
+	coverage_db.report_coverage(cocotb.log.info,bins=True)
+	coverage_db.export_to_xml(filename="coverage.xml") 
 #test the response when trying to push to a full fifo
 @cocotb.test()
 async def test_overflow(dut):
 	"""Check the overflow condition"""
 
-	cocotb.start_soon(Clock(dut.i_clk_wr, 10, units="ns").start())
-	cocotb.start_soon(Clock(dut.i_clk_rd, 10, units="ns").start())
+	cocotb.start_soon(Clock(dut.i_clk_wr, 5, units="ns").start())
+	cocotb.start_soon(Clock(dut.i_clk_rd, 5, units="ns").start())
 	await reset(dut,5)
 
 	wr = 1
@@ -169,8 +171,8 @@ async def test_overflow(dut):
 async def test_underflow(dut):
 	"""test the response when trying to get from an empty fifo"""
 
-	cocotb.start_soon(Clock(dut.i_clk_wr, 10, units="ns").start())
-	cocotb.start_soon(Clock(dut.i_clk_rd, 10, units="ns").start())
+	cocotb.start_soon(Clock(dut.i_clk_wr, 5, units="ns").start())
+	cocotb.start_soon(Clock(dut.i_clk_rd, 5, units="ns").start())
 	await reset(dut,5)
 
 	wr = 1 

@@ -8,6 +8,7 @@ import random
 import cocotb
 import pyuvm
 from utils import FifoBfm
+from cocotb_coverage.coverage import CoverCross,CoverPoint,coverage_db
 
 
 g_width = int(cocotb.top.g_width)
@@ -242,4 +243,7 @@ class Test(uvm_test):
         cocotb.start_soon(Clock(cocotb.top.i_clk_wr, 10, units="ns").start())
         cocotb.start_soon(Clock(cocotb.top.i_clk_rd, 10, units="ns").start())
         await self.test_all.start()
+
+        coverage_db.report_coverage(cocotb.log.info,bins=True)
+        coverage_db.export_to_xml(filename="coverage_pyuvm.xml")
         self.drop_objection()
