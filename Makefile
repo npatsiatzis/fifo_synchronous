@@ -15,6 +15,8 @@ VHDL_SOURCES += $(PWD)/synchronous_fifo.vhd
 test:
 		rm -rf sim_build
 		$(MAKE) sim MODULE=testbench TOPLEVEL=synchronous_fifo
+formal :
+		sby --yosys "yosys -m ghdl" -f synchronous_fifo.sby
 
 # include cocotb's make rules to take care of the simulator setup
 include $(shell cocotb-config --makefiles)/Makefile.sim

@@ -1,0 +1,102 @@
+library ieee;
+use ieee.numeric_std.all;
+
+vunit formal_test(synchronous_fifo(arch)) {
+
+	default clock is rising_edge(i_clk_wr);
+
+	--cover empty to full and vice versa transitions
+	cover_full : cover{rose(o_full)};
+	cover_empty : cover{fell(o_empty)};
+	cover_full_to_empty : cover {o_full;  true[*]; o_empty};
+	cover_empty_to_full : cover {o_empty; true[*]; o_full};
+
+	--assume rst at startup
+	reset_wr : assume{i_rst_wr; i_rst_wr = '0' [*100]};
+	reset_rd : assume{i_rst_rd; i_rst_rd = '0' [*100]};
+	reset_domains : assume always{i_rst_wr = i_rst_rd};
+
+	--check conditions after reset
+	after_reset_wr : assert always {i_rst_wr} |=>{r_addr_w = 0};
+	after_reset_rd : assert always {i_rst_rd} |=>{r_addr_r = 0};
+
+
+	--check fifo full and empty
+	check_full : assert always {r_fill = 2**g_depth} |-> {o_full};
+	check_empty : assert always {r_fill = 0} |-> {o_empty};
+
+
+
+	--FIFO functionality test 
+	--if you write two values in succession to the FIFO, you should be 
+	--able to read those same two values in succession, some time in the future
+
+	signal flag_in1 : std_ulogic := '0';
+	signal flag_in2 : std_ulogic := '0';
+	signal flag_out1 : std_ulogic := '0';
+	signal flag_out2 : std_ulogic := '0';
+
+
+	--verify that out is preserved 
+	assert_out_order : assert always {flag_out2} |-> {flag_out1};
+
+
+	--random values to be pushed in succession to the FIFO 
+	signal val_1 : std_ulogic_vector(g_width -1 downto 0);
+	signal val_2 : std_ulogic_vector(g_width -1 downto 0);
+	attribute anyconst : boolean;
+	attribute anyconst of val_1 : signal is true;
+	attribute anyconst of val_2 : signal is true;
+	
+	signal addr_1 : unsigned(g_depth-1 downto 0);
+	attribute anyconst of addr_1 : signal is true;
+	signal addr_2 : unsigned(g_depth -1 downto 0);
+
+	addr_2 <= (others => '0') when addr_1 = 2**g_depth -1 else addr_1 + 1;
+	assume {addr_1 < 2**g_depth-1};
+
+	type t_wr_states is (IDLE,S1,S2,S3);
+	signal wr_state : t_wr_states;
+
+
+	process(i_clk_wr)
+	begin
+		if(rising_edge(i_clk_wr)) then
+			if(i_rst_wr = '1') then
+				wr_state <= IDLE;
+				flag_in1 <= '0';
+				flag_in2 <= '0';
+				flag_out1 <= '0';
+				flag_out2 <= '0';
+			else
+				case(wr_state) is 
+					when IDLE =>
+						if(i_wr = '1' and o_full = '0' and r_addr_w(g_depth -1 downto 0) = addr_1  and i_data = val_1) then
+							wr_state <= S1;
+							flag_in1 <= '1';
+						end if;
+		
+					when S1 =>
+						if(i_wr = '1' and o_full = '0' and r_addr_w(g_depth -1 downto 0) = addr_2 and i_data = val_2)then
+							wr_state <= S2;
+							flag_in2 <= '1';
+						end if;
+					when S2 =>
+						if(i_rd = '1' and o_empty = '0' and r_addr_r(g_depth -1 downto 0) = addr_1 and mem(to_integer(addr_1)) = val_1) then
+							wr_state <= S3;
+							flag_out1 <= '1';
+							end if;
+					when S3 =>
+						if(i_rd = '1' and o_empty = '0')then
+							wr_state <= IDLE;
+							flag_out2 <= '1';
+						else
+							wr_state <= IDLE;
+						end if;
+				end case;
+			end if;
+		end if;
+	end process;
+
+
+}
