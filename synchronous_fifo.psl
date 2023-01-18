@@ -5,29 +5,11 @@ vunit formal_test(synchronous_fifo(arch)) {
 
 	default clock is rising_edge(i_clk_wr);
 
-	--cover empty to full and vice versa transitions
-	cover_full : cover{rose(o_full)};
-	cover_empty : cover{fell(o_empty)};
-	cover_full_to_empty : cover {o_full;  true[*]; o_empty};
-	cover_empty_to_full : cover {o_empty; true[*]; o_full};
+	--key checks for FIFO functionality
+	--1) No data loss
+	--2) No reordering
+	--3) No data duplication
 
-	--assume rst at startup
-	reset_wr : assume{i_rst_wr; i_rst_wr = '0' [*100]};
-	reset_rd : assume{i_rst_rd; i_rst_rd = '0' [*100]};
-	reset_domains : assume always{i_rst_wr = i_rst_rd};
-
-	--check conditions after reset
-	after_reset_wr : assert always {i_rst_wr} |=>{r_addr_w = 0};
-	after_reset_rd : assert always {i_rst_rd} |=>{r_addr_r = 0};
-
-
-	--check fifo full and empty
-	check_full : assert always {r_fill = 2**g_depth} |-> {o_full};
-	check_empty : assert always {r_fill = 0} |-> {o_empty};
-
-
-
-	--FIFO functionality test 
 	--if you write two values in succession to the FIFO, you should be 
 	--able to read those same two values in succession, some time in the future
 
@@ -37,33 +19,45 @@ vunit formal_test(synchronous_fifo(arch)) {
 	signal flag_out2 : std_ulogic := '0';
 
 
-	--verify that out is preserved 
-	assert_out_order : assert always {flag_out2} |-> {flag_out1};
-
-
 	--random values to be pushed in succession to the FIFO 
 	signal val_1 : std_ulogic_vector(g_width -1 downto 0);
 	signal val_2 : std_ulogic_vector(g_width -1 downto 0);
 	attribute anyconst : boolean;
 	attribute anyconst of val_1 : signal is true;
 	attribute anyconst of val_2 : signal is true;
-	
+
 
 	signal addr_1 : unsigned(g_depth-1 downto 0);
 	attribute anyconst of addr_1 : signal is true;
 	signal addr_2 : unsigned(g_depth -1 downto 0);
 
 	addr_2 <= (others => '0') when addr_1 = 2**g_depth -1 else addr_1 + 1;
-	assume always {addr_1 < 2**g_depth-1 and addr_1 >0};
+
 
 	type t_wr_states is (IDLE,S1,S2,S3);
 	signal wr_state : t_wr_states;
-	assume {wr_state = IDLE};
-	assume always{true[+]; i_wr = '1' and o_full = '0' and r_addr_w(g_depth -1 downto 0) = addr_1  and i_data = val_1;i_wr = '1' and o_full = '0' and r_addr_w(g_depth -1 downto 0) = addr_2 and i_data = val_2};
-	assume always {wr_state = S3} |-> {flag_out1};
+	
+	--#####################################################
 
+	-------------------
+	--ASSERT PROPERTIES
+	-------------------
+
+	--check conditions after reset
+	after_reset_wr : assert always {i_rst_wr} |=>{r_addr_w = 0};
+	after_reset_rd : assert always {i_rst_rd} |=>{r_addr_r = 0};
+
+	--check fifo full and empty
+	check_full : assert always {r_fill = 2**g_depth} |-> {o_full};
+	check_empty : assert always {r_fill = 0} |-> {o_empty};
+
+	--verify that output order is preserved (also checks duplication and dataloss indirectly)
+	assert_out_order : assert always {flag_out2} |-> {flag_out1};
+
+	--check contents of FIFO in state S3 to verify that write operations are correct
 	assert always {wr_state = S3} |-> {mem(to_integer(addr_2)) = val_2};
 
+	--
 	process(i_clk_wr)
 	begin
 		if(rising_edge(i_clk_wr)) then
@@ -106,5 +100,51 @@ vunit formal_test(synchronous_fifo(arch)) {
 		end if;
 	end process;
 
+	--#####################################################
 
+	-------------------
+	--ASSUME PROPERTIES
+	-------------------
+
+	--assume start conditions, not necesserily start from reset
+	--in any case, start with read/write addresses at 0.
+	reset_wr :assume {true[*];rose(i_clk_wr) : i_rst_wr; true[+]; rose(i_clk_wr) : i_rst_wr};
+	reset_rd :assume {true[*];rose(i_clk_rd) : i_rst_rd; true[+]; rose(i_clk_rd) : i_rst_rd};
+	reset_addresses :assume {r_addr_w = 0 : r_addr_r = 0};
+
+	--assumptions regarding reset signals, both are
+	--synchronously asserted/deasserted
+	assume {not rose(i_clk_wr)} |-> {i_rst_wr = '0'};
+	assume {not rose(i_clk_rd)} |-> {i_rst_rd = '0'};
+	reset_domains : assume always{i_rst_wr = i_rst_rd};
+
+
+	--val_1 and val_2 should be different to check againt data duplication 
+	assume_diff_val : assume {val_1 /= val_2};
+
+
+	reset_fsm : assume {wr_state = IDLE};
+	push_data : assume always{true[+]; i_wr = '1' and o_full = '0' and r_addr_w(g_depth -1 downto 0) = addr_1  and i_data = val_1;i_wr = '1' and o_full = '0' and r_addr_w(g_depth -1 downto 0) = addr_2 and i_data = val_2};
+	
+	--#####################################################
+
+	------------------
+	--COVER PROPERTIES
+	------------------
+
+	--cover empty to full and vice versa transitions
+	cover_full : cover{rose(o_full)};
+	cover_empty : cover{fell(o_empty)};
+	cover_full_to_empty : cover {o_full;  true[*]; o_empty};
+	cover_empty_to_full : cover {o_empty; true[*]; o_full};
+
+	--cover pushing the random consecutive data in FIFO and then reading them out
+	--cover the case of (non)-consecutive writes and (non)-consecutive reads
+	no_dupl_reord_loss : cover{wr_state = S2;wr_state=S3;wr_state = IDLE};
+	no_dupl_reord_loss_no_cons_w1 : cover{wr_state = IDLE [+]; wr_state = S1; wr_state = S2;wr_state=S3; wr_state = IDLE};
+	no_dupl_reord_loss_no_cons_w2 : cover{wr_state = IDLE; wr_state = S1 [+]; wr_state = S2;wr_state=S3; wr_state = IDLE};
+	no_dupl_reord_loss_no_cons_w12 : cover{wr_state = IDLE [+]; wr_state = S1 [+]; wr_state = S2;wr_state=S3; wr_state = IDLE};
+	no_dupl_reord_loss_no_cons_r1 : cover{wr_state = S2 [+];wr_state=S3; wr_state = IDLE};
+	no_dupl_reord_loss_no_cons_r2 : cover{wr_state = S2;wr_state=S3 [+]; wr_state = IDLE};
+	no_dupl_reord_loss_no_cons_r12 : cover{wr_state = S2 [+];wr_state=S3 [+]; wr_state = IDLE};
 }
