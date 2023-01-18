@@ -5,8 +5,8 @@ task_induction
 [options]
 task_cover: mode cover
 task_cover: depth 40
-task_induction: mode prove
-task_induction: depth 16	
+task_induction: mode bmc
+task_induction: depth 30	
 
 [engines]
 smtbmc
