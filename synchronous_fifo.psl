@@ -10,8 +10,10 @@ vunit formal_test(synchronous_fifo(arch)) {
 	--2) No reordering
 	--3) No data duplication
 
-	--if you write two values in succession to the FIFO, you should be 
-	--able to read those same two values in succession, some time in the future
+	--basic proposition for formal verification of FIFO:
+	--check that for any two "random" data values that arrive in 
+	--predetermined order (here succesively) in the FIFO, they depart the FIFO 
+	--in the same order after being read
 
 	signal flag_in1 : std_ulogic := '0';
 	signal flag_in2 : std_ulogic := '0';
@@ -57,7 +59,17 @@ vunit formal_test(synchronous_fifo(arch)) {
 	--check contents of FIFO in state S3 to verify that write operations are correct
 	assert always {wr_state = S3} |-> {mem(to_integer(addr_2)) = val_2};
 
-	--
+	--check that data are not pushed in FIFO when they shouldn't
+	check_push_when_full: assert always (({i_wr and o_full and not i_rd} |=> {stable(r_addr_w)}) abort i_rst_wr);
+
+	--check that data are not poped from the FIFO when they shouldn't
+	check_pop_when_empty : assert always (({i_rd and o_empty and not i_wr} |=> {stable(r_addr_r)}) abort i_rst_rd);
+
+	--check that data are pushed/poped when they should
+	check_push_to_full: assert always (({i_wr and not o_full} |=> {not stable(r_addr_w)}) abort i_rst_wr);
+	check_pop_from_empty: assert always (({i_rd and not o_empty} |=> {not stable(r_addr_r)}) abort i_rst_rd);
+	check_push_pop_empty: assert always (({i_wr and o_empty and i_rd} |=> {stable(r_addr_r) and not stable(r_addr_w)}) abort (i_rst_wr or i_rst_rd));
+
 	process(i_clk_wr)
 	begin
 		if(rising_edge(i_clk_wr)) then
@@ -132,11 +144,13 @@ vunit formal_test(synchronous_fifo(arch)) {
 	--COVER PROPERTIES
 	------------------
 
-	--cover empty to full and vice versa transitions
-	cover_full : cover{rose(o_full)};
-	cover_empty : cover{fell(o_empty)};
-	cover_full_to_empty : cover {o_full;  true[*]; o_empty};
-	cover_empty_to_full : cover {o_empty; true[*]; o_full};
+	cover_write_last : cover {i_wr && not o_full && w_addr_w = 2**g_depth-1};
+	cover_read_last : cover {i_rd && not o_empty && w_addr_r = 2**g_depth-1};
+	cover_overflow_underflow : cover {true[+]; o_overflow; true[+]; o_underflow; true[+]; o_overflow};
+	cover_full : cover{rose(o_full); true [+]; fell(o_full); true[+]; rose(o_full)};
+	cover_empty : cover{fell(o_empty); true[+]; rose(o_empty); true[+]; fell(o_empty)};
+	cover_full_to_empty : cover {o_full;  true[+]; o_empty; true[+]; o_full};
+	cover_empty_to_full : cover {o_empty; true[+]; o_full; true [+]; o_empty};
 
 	--cover pushing the random consecutive data in FIFO and then reading them out
 	--cover the case of (non)-consecutive writes and (non)-consecutive reads
