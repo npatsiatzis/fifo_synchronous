@@ -50,8 +50,8 @@ vunit formal_test(synchronous_fifo(arch)) {
 	after_reset_rd : assert always {i_rst_rd} |=>{r_addr_r = 0};
 
 	--check fifo full and empty
-	check_full : assert always {r_fill = 2**g_depth} |-> {o_full};
-	check_empty : assert always {r_fill = 0} |-> {o_empty};
+	check_full : assert always {(not o_full) or r_fill = 2**g_depth};
+	check_empty : assert always {(not o_empty) or  r_fill = 0};
 
 	--verify that output order is preserved (also checks duplication and dataloss indirectly)
 	assert_out_order : assert always {flag_out2} |-> {flag_out1};
@@ -69,6 +69,13 @@ vunit formal_test(synchronous_fifo(arch)) {
 	check_push_to_full: assert always (({i_wr and not o_full} |=> {not stable(r_addr_w)}) abort i_rst_wr);
 	check_pop_from_empty: assert always (({i_rd and not o_empty} |=> {not stable(r_addr_r)}) abort i_rst_rd);
 	check_push_pop_empty: assert always (({i_wr and o_empty and i_rd} |=> {stable(r_addr_r) and not stable(r_addr_w)}) abort (i_rst_wr or i_rst_rd));
+
+	--check that the FIFO fill levels behaves as expected
+	check_fill_level: assert always {r_fill = 0 or r_fill = prev(r_fill) or r_fill = prev(r_fill) +1 or r_fill = prev(r_fill)-1};
+
+	--check that r/w pointers behaves as expected
+	check_w_pointer: assert always {r_addr_w = 0 or r_addr_w = prev(r_addr_w) or r_addr_w = prev(r_addr_w)+1};
+	check_r_pointer: assert always {r_addr_r = 0 or r_addr_r = prev(r_addr_r) or r_addr_r = prev(r_addr_r)+1};
 
 	process(i_clk_wr)
 	begin
