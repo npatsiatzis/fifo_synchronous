@@ -1,12 +1,12 @@
 [tasks]
 task_cover
-task_induction
+task_bmc
 
 [options]
 task_cover: mode cover
 task_cover: depth 40
-task_induction: mode bmc
-task_induction: depth 30	
+task_bmc: mode bmc
+task_bmc: depth 30	
 
 [engines]
 smtbmc
