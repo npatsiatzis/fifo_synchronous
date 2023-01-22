@@ -46,15 +46,15 @@ vunit formal_test(synchronous_fifo(arch)) {
 	-------------------
 
 	--check conditions after reset
-	after_reset_wr : assert always {i_rst_wr} |=>{r_addr_w = 0};
-	after_reset_rd : assert always {i_rst_rd} |=>{r_addr_r = 0};
+	after_reset_wr : assert always {rose(i_rst_wr)} |=>{r_addr_w = 0};
+	after_reset_rd : assert always {rose(i_rst_rd)} |=>{r_addr_r = 0};
 
 	--check fifo full and empty
-	check_full : assert always {(not o_full) or r_fill = 2**g_depth};
-	check_empty : assert always {(not o_empty) or  r_fill = 0};
+	check_full : assert always {r_fill = 2**g_depth} |-> {o_full = '1'};
+	check_empty : assert always {r_fill = 0} |-> {o_empty = '1'};
 
 	--verify that output order is preserved (also checks duplication and dataloss indirectly)
-	assert_out_order : assert always {flag_out2} |-> {flag_out1};
+	assert_out_order : assert always {rose(flag_out2)} |-> {flag_out1};
 
 	--check contents of FIFO in state S3 to verify that write operations are correct
 	assert always {wr_state = S3} |-> {mem(to_integer(addr_2)) = val_2};
@@ -70,6 +70,16 @@ vunit formal_test(synchronous_fifo(arch)) {
 	check_pop_from_empty: assert always (({i_rd and not o_empty} |=> {not stable(r_addr_r)}) abort i_rst_rd);
 	check_push_pop_empty: assert always (({i_wr and o_empty and i_rd} |=> {stable(r_addr_r) and not stable(r_addr_w)}) abort (i_rst_wr or i_rst_rd));
 
+	--check that we have no full when read
+	check_no_full : assert always(({i_rd} |=> {not o_full})abort i_rst_wr);
+	--check that we have no empty when write
+	check_no_empty : assert always (({i_wr} |=> {not o_empty}) abort i_rst_rd);
+
+	--check write pointer wrap around when writting in non-full fifo in last position
+	check_w_pointer_wrap : assert always (({i_wr='1' and (o_full ='0') and (w_addr_w = 2**g_depth-1)} |=> {w_addr_w =0}) abort i_rst_wr);
+	--check read pointer wrap around when reading from non-empty fifo in last position
+	check_r_pointer_wrap : assert always (({i_rd ='1' and o_empty = '0' and (r_addr_r = 2**g_depth-1)} |=> {w_addr_r = 0}) abort i_rst_rd);
+
 	--check that the FIFO fill levels behaves as expected
 	check_fill_level: assert always {r_fill = 0 or r_fill = prev(r_fill) or r_fill = prev(r_fill) +1 or r_fill = prev(r_fill)-1};
 
@@ -80,11 +90,15 @@ vunit formal_test(synchronous_fifo(arch)) {
 	--check that data in FIFO do not change if no (valid) write takes place
 	check_fifo_entries: assert always {(not i_wr)} |=> {prev(mem) = mem};
 
+	--check correct data stored after valid write
+	check_valid_write : assert always (({i_wr and (not o_full)} |=> {mem(to_integer(prev(w_addr_w))) = prev(i_data)})abort i_rst_wr);
+
 	--buffered data validity pattern, check that o_data holds correct value in a read transaction
 	check_o_data_after_rd: assert always (({i_rd and (not o_empty)} |=> {o_data = mem(to_integer(prev(w_addr_r)))}) abort i_rst_rd);
 
 	--check that we are never in illegal state  
 	check_illegal_state: assert never {wr_state = S4};
+
 
 	process(i_clk_wr)
 	begin

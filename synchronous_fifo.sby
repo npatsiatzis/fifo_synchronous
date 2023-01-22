@@ -9,7 +9,8 @@ task_bmc: mode bmc
 task_bmc: depth 30	
 
 [engines]
-smtbmc
+task_cover: smtbmc
+task_bmc: abc bmc3
 
 [script]
 ghdl --std=08 synchronous_fifo.vhd synchronous_fifo.psl -e synchronous_fifo
