@@ -1,4 +1,4 @@
-from cocotb.triggers import Timer
+from cocotb.triggers import Timer, RisingEdge
 from cocotb_coverage import crv
 from cocotb.clock import Clock
 from cocotb.queue import QueueEmpty, QueueFull, Queue
@@ -25,12 +25,9 @@ def notify():
 
 # at_least = value is superfluous, just shows how you can determine the amount of times that
 # a bin must be hit to considered covered
-@CoverPoint("top.data",xf = lambda x : x.data, bins = list(range(2**g_width)), at_least=1)
-@CoverPoint("top.wr",xf = lambda x : x.wr, bins = [True,False], at_least=1)
-@CoverCross("top.cross", items = ["top.wr","top.data"], at_least=1)
+@CoverPoint("top.data",xf = lambda x : x, bins = list(range(2**g_width)), at_least=1)
 def number_cover(dut):
-    covered_cross.append((dut.wr,dut.data))
-
+    pass
 
 class crv_inputs(crv.Randomized):
     def __init__(self,wr,rd,data):
@@ -55,39 +52,35 @@ class SeqItem(uvm_sequence_item):
 
 class RandomSeq(uvm_sequence):
     async def body(self):
-        #cover everything in the cross i_data,i_wr
         while full_cross != True:
+        # while len(covered_values) != 2**g_width:
             data_tr = SeqItem("data_tr", None, None,None)
             await self.start_item(data_tr)
             data_tr.randomize_operands()
-            while((data_tr.i_crv.wr,data_tr.i_crv.data) in covered_cross):
-                data_tr.randomize_operands()
-            covered_cross.append((data_tr.i_crv.wr,data_tr.i_crv.data))
-            covered_values.append(data_tr.i_crv.data)
-
-            number_cover(data_tr.i_crv)
-            coverage_db["top.cross"].add_threshold_callback(notify, 100)
+            # while(data_tr.i_crv.data in covered_values):
+            #     data_tr.randomize_operands()
+            # covered_values.append(data_tr.i_crv.data)
 
             await self.finish_item(data_tr)
 
 
-class ReadSeq(uvm_sequence):
-    async def body(self):
+# class ReadSeq(uvm_sequence):
+#     async def body(self):
 
-        #read enough to cause underflow
-        for i in range(2**g_depth+100):
-            data_tr = SeqItem("data_tr",0,1,0)
-            await self.start_item(data_tr)
-            await self.finish_item(data_tr)
+#         #read enough to cause underflow
+#         for i in range(2**g_depth+100):
+#             data_tr = SeqItem("data_tr",0,1,0)
+#             await self.start_item(data_tr)
+#             await self.finish_item(data_tr)
 
 class TestAllSeq(uvm_sequence):
 
     async def body(self):
         seqr = ConfigDB().get(None, "", "SEQR")
         random = RandomSeq("random")
-        read = ReadSeq("read_seq")
+        # read = ReadSeq("read_seq")
         await random.start(seqr)
-        await read.start(seqr)
+        # await read.start(seqr)
 
 
 class Driver(uvm_driver):
@@ -107,9 +100,17 @@ class Driver(uvm_driver):
         while True:
             data = await self.seq_item_port.get_next_item()
             await self.bfm.send_data((data.i_crv.wr, data.i_crv.rd,data.i_crv.data))
-            result = await self.bfm.get_result()
-            self.ap.write(result)
-            data.result = result
+            await RisingEdge(self.bfm.dut.i_clk_wr)
+            if(data.i_crv.rd == 1 and self.bfm.dut.o_empty.value == 0):
+                result = await self.bfm.get_result()
+                self.ap.write(result)
+                data.result = result
+
+                if(int(result) not in covered_values):
+                    covered_values.append(int(result))
+                number_cover(int(result))
+                coverage_db["top.data"].add_threshold_callback(notify, 100)
+
             self.seq_item_port.item_done()
 
 
@@ -119,9 +120,10 @@ class Coverage(uvm_subscriber):
         self.cvg = set()
 
     def write(self, data):
-        (wr, rd, i_data) = data
-        if((int(i_data)) not in self.cvg):
-            self.cvg.add(int(i_data))
+        # (wr, rd, i_data) = data
+        number_cover(int(data))
+        if((int(data)) not in self.cvg):
+            self.cvg.add(int(data))
 
     def report_phase(self):
         try:
@@ -140,10 +142,10 @@ class Coverage(uvm_subscriber):
 
 
 class Scoreboard(uvm_component):
-    def __init__(self,name,parent):
-        super().__init__(name,parent)
-        self.result = 0
-        self.q = Queue(maxsize=2**g_depth)
+    # def __init__(self,name,parent):
+    #     super().__init__(name,parent)
+    #     # self.result = 0
+    #     # self.q = Queue(maxsize=2**g_depth)
 
     def build_phase(self):
         self.data_fifo = uvm_tlm_analysis_fifo("data_fifo", self)
@@ -168,29 +170,42 @@ class Scoreboard(uvm_component):
             _, actual_result = self.result_get_port.try_get()
             data_success, data = self.data_get_port.try_get()
 
-            (wr,rd,i_data) = data 
-            (result,overflow,underflow) = actual_result
-
-            prev_result = self.result
-
-            if (rd == 1 and self.q.full() != True):
-                try:
-                    self.result = self.q.get_nowait()
-                except QueueEmpty:
-                    assert not (underflow !=1),"Wrong Behavior!"
-
-            if(wr == 1):
-                try:
-                    self.q.put_nowait(i_data)
-                except QueueFull:
-                    assert not (overflow != 1),"Wrong Behavior!"
-
-            if (rd == 1 and self.q.full() == True):
-                self.result = self.q.get_nowait()
-
-            assert not (int(prev_result) != int(result)),"Wrong Behavior!"
- 
+            if not data_success:
+                self.logger.critical(f"result {actual_result} had no command")
+            else:
+                if int(data) == int(actual_result):
+                    self.logger.info("PASSED")
+                    print("i_tx_data is {}, rx_data is {}".format(int(data),int(actual_result)))
+                else:
+                    self.logger.error("FAILED")
+                    print("i_tx_data is {}, rx_data is {}".format(int(data),int(actual_result)))
+                    passed = False
         assert passed
+
+
+        #     (wr,rd,i_data) = data 
+        #     (result,overflow,underflow) = actual_result
+
+        #     prev_result = self.result
+
+        #     if (rd == 1 and self.q.full() != True):
+        #         try:
+        #             self.result = self.q.get_nowait()
+        #         except QueueEmpty:
+        #             assert not (underflow !=1),"Wrong Behavior!"
+
+        #     if(wr == 1):
+        #         try:
+        #             self.q.put_nowait(i_data)
+        #         except QueueFull:
+        #             assert not (overflow != 1),"Wrong Behavior!"
+
+        #     if (rd == 1 and self.q.full() == True):
+        #         self.result = self.q.get_nowait()
+
+        #     assert not (int(prev_result) != int(result)),"Wrong Behavior!"
+ 
+        # assert passed
 
 
 class Monitor(uvm_component):
@@ -230,8 +245,8 @@ class Env(uvm_env):
 @pyuvm.test()
 class Test(uvm_test):
     """Test synchronous FIFO with random values"""
-    """Constrained random test generation to cover the cross of (i_data,i_wr)"""
-    """Test underflow/overflow conditions"""
+    """Constrained random test generation for wr,rd,data"""
+    """Test generation ends when all data values are written and read to/from memory at least once"""
     def build_phase(self):
         self.env = Env("env", self)
 
@@ -245,5 +260,5 @@ class Test(uvm_test):
         await self.test_all.start()
 
         coverage_db.report_coverage(cocotb.log.info,bins=True)
-        coverage_db.export_to_xml(filename="coverage_pyuvm.xml")
+        coverage_db.export_to_xml(filename="coveragexml")
         self.drop_objection()

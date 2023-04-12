@@ -19,7 +19,7 @@ def test_fifo(g_width,g_depth):
     module = "testbench"
     toplevel = "synchronous_fifo"   
     vhdl_sources = [
-        os.path.join(rtl_dir, "synchronous_fifo.vhd"),
+        os.path.join(rtl_dir, "../rtl/synchronous_fifo.vhd"),
         ]
 
     parameter = {}

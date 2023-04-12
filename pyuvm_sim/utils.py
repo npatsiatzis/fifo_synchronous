@@ -41,9 +41,6 @@ class FifoBfm(metaclass=utility_classes.Singleton):
 
 
     async def driver_bfm(self):
-        self.dut.i_wr.value = 0 
-        self.dut.i_data.value = 0
-        self.dut.i_rd.value = 0
         while True:
             await RisingEdge(self.dut.i_clk_wr)
             try:
@@ -55,15 +52,21 @@ class FifoBfm(metaclass=utility_classes.Singleton):
                 pass
 
     async def data_mon_bfm(self):
+        f_wr_done = 0
         while True:
+            f_wr_done = self.dut.f_wr_done.value
             await RisingEdge(self.dut.i_clk_wr)
-            data_tuple = (self.dut.i_wr.value,self.dut.i_rd.value,self.dut.i_data.value)
-            self.data_mon_queue.put_nowait(data_tuple)
+            if((self.dut.f_wr_done.value ==1 and f_wr_done == 0) or (self.dut.f_wr_done.value ==1 and f_wr_done == 1)):
+                data = self.dut.f_data.value
+                self.data_mon_queue.put_nowait(data)
 
     async def result_mon_bfm(self):
+        f_rd_done = 0 
         while True:
-            await RisingEdge(self.dut.i_clk_wr)
-            self.result_mon_queue.put_nowait((self.dut.o_data.value,self.dut.o_overflow.value,self.dut.o_underflow.value))
+            f_rd_done = self.dut.f_rd_done.value
+            await RisingEdge(self.dut.i_clk_rd)
+            if((self.dut.f_rd_done.value == 1 and f_rd_done == 0) or (self.dut.f_rd_done.value == 1 and f_rd_done == 1)):
+                self.result_mon_queue.put_nowait((self.dut.o_data.value))
 
 
     def start_bfm(self):

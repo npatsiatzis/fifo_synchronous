@@ -8,7 +8,7 @@ use ieee.math_real.all;
 
 entity synchronous_fifo is
 	generic (
-			g_width : natural :=9;
+			g_width : natural :=8;
 			g_depth : natural :=4);
 	port (
 			i_clk_wr : in std_ulogic;
@@ -39,18 +39,37 @@ architecture arch of synchronous_fifo is
 
 	type fifo_mem is array(0 to 2**g_depth-1) of std_ulogic_vector(g_width -1 downto 0);
 	signal mem : fifo_mem :=(others => (others => '0'));
+
+	--signals used in verification
+	signal f_wr_done, f_rd_done : std_ulogic;
+	signal f_data : std_ulogic_vector(g_width -1 downto 0);
 begin
+
+	veirification_util : process(i_clk_wr,i_rst_wr) is
+	begin
+		if(rising_edge(i_clk_wr)) then
+			if(i_rst_wr = '1') then
+				f_data <= (others => '0');
+			else
+				f_data <= i_data;
+			end if;
+		end if;
+	end process; -- veirification_util
 
 	--FIFO write domain
 	fifo_write : process(i_clk_wr)
 	begin
 		if(rising_edge(i_clk_wr)) then
+			f_wr_done <= '0';
+
 			if(i_rst_wr = '1') then
 				r_addr_w <= (others => '0');
+				f_wr_done <= '0';
 			else
 				if(i_wr = '1' and o_full = '0') then
 					mem(to_integer(w_addr_w)) <= i_data;
 					r_addr_w <= r_addr_w + 1;
+					f_wr_done <= '1';
 				end if;
 			end if;
 		end if;
@@ -60,13 +79,17 @@ begin
 	fifo_read : process(i_clk_rd)
 	begin
 		if(rising_edge(i_clk_rd)) then
+			f_rd_done <= '0';
+
 			if(i_rst_rd = '1') then
 				o_data <= (others => '0');
 				r_addr_r <= (others => '0');
+				f_rd_done <= '0';
 			else
 				if(i_rd = '1' and  o_empty = '0')then
 					o_data <= mem(to_integer(w_addr_r));
 					r_addr_r <= r_addr_r +1;
+					f_rd_done <= '1';
 				end if;
 			end if;
 		end if;
