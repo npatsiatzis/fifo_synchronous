@@ -260,5 +260,5 @@ class Test(uvm_test):
         await self.test_all.start()
 
         coverage_db.report_coverage(cocotb.log.info,bins=True)
-        coverage_db.export_to_xml(filename="coveragexml")
+        coverage_db.export_to_xml(filename="coverage.xml")
         self.drop_objection()
