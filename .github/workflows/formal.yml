@@ -26,5 +26,5 @@ jobs:
           
       - name: check results
         run: |
-          cd formal/ && var=$(cat synchronous_fifo_task_bmc/synchronous_fifo_task_bmc.xml | grep -o -E 'failures.{0,3}' | head -1 | cut -f2- -d\") 
+          var=$(cat formal/synchronous_fifo_task_bmc/synchronous_fifo_task_bmc.xml | grep -o -E 'failures.{0,3}' | head -1 | cut -f2- -d\") 
           if [ $var = 0 ]; then exit 0; else exit 1; fi
