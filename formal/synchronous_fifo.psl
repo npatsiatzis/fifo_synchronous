@@ -53,7 +53,7 @@ vunit formal_test(synchronous_fifo(arch)) {
 	check_full : assert always {r_fill = 2**g_depth} |-> {o_full = '1'};
 	check_empty : assert always {r_fill = 0} |-> {o_empty = '1'};
 
-	--verify that output order is preserved (also checks duplication and dataloss indirectly)
+	--check that output order is preserved (also checks duplication and dataloss indirectly)
 	assert_out_order : assert always {rose(flag_out2)} |-> {flag_out1};
 
 	--check contents of FIFO in state S3 to verify that write operations are correct
@@ -98,6 +98,10 @@ vunit formal_test(synchronous_fifo(arch)) {
 
 	--check that we are never in illegal state  
 	check_illegal_state: assert never {wr_state = S4};
+
+	--check that full and empty are never unknown
+	check_empty_X : assert always {o_empty = '0' or o_empty = '1'};
+	check_full_X: assert always {o_full = '0' or o_full = '1'};
 
 
 	process(i_clk_wr)
@@ -177,7 +181,7 @@ vunit formal_test(synchronous_fifo(arch)) {
 	reset_domains : assume always{i_rst_wr = i_rst_rd};
 
 
-	--val_1 and val_2 should be different to check againt data duplication 
+	--val_1 and val_2 should be different to check against data duplication 
 	assume_diff_val : assume {val_1 /= val_2};
 
 	--make it so that the two writes happen consecutively
@@ -200,6 +204,8 @@ vunit formal_test(synchronous_fifo(arch)) {
 	cover_empty : cover{fell(o_empty); true[+]; rose(o_empty); true[+]; fell(o_empty)};
 	cover_full_to_empty : cover {o_full;  true[+]; o_empty; true[+]; o_full};
 	cover_empty_to_full : cover {o_empty; true[+]; o_full; true [+]; o_empty};
+	cover_backpressure_read : cover {true[+]; i_rd = '1' and o_empty = '1'; o_data = prev(o_data)};
+	covere_backpressure_write : cover {true[+]; i_wr = '1' and o_full = '1'; r_addr_w = prev(r_addr_w)};
 
 	--cover pushing the random consecutive data in FIFO and then reading them out
 	--cover the case of (non)-consecutive writes and (non)-consecutive reads
