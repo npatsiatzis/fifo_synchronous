@@ -18,4 +18,6 @@ prep -top synchronous_fifo
 
 [files]
 synchronous_fifo.psl
-../rtl/synchronous_fifo.vhd
+../rtl/VHDL/synchronous_fifo.vhd
+
+	
