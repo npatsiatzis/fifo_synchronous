@@ -16,6 +16,9 @@ test:
 		rm -rf sim_build
 		$(MAKE) sim MODULE=testbench TOPLEVEL=synchronous_fifo
 
+lint: $(VHDL_SOURCES)
+	vsg --style jcl -f $^
+
 clean_dir:
 		rm -f wave.*
 		rm -f *.o 
