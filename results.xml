@@ -1,0 +1,8 @@
+<testsuites name="results">
+  <testsuite name="all" package="all">
+    <property name="random_seed" value="1681299453" />
+    <testcase name="test_behavior" classname="testbench" file="/home/nikos/Desktop/RTL/fifo/synchronous_fifo/testbench.py" lineno="55" time="6.935992002487183" sim_time_ns="5220.000001" ratio_time="752.5960236298076" />
+    <testcase name="test_overflow" classname="testbench" file="/home/nikos/Desktop/RTL/fifo/synchronous_fifo/testbench.py" lineno="121" time="0.02961277961730957" sim_time_ns="225.00000099999943" ratio_time="7598.070964891121" />
+    <testcase name="test_underflow" classname="testbench" file="/home/nikos/Desktop/RTL/fifo/synchronous_fifo/testbench.py" lineno="165" time="0.004439592361450195" sim_time_ns="70.00000100000034" ratio_time="15767.213586504775" />
+  </testsuite>
+</testsuites>
