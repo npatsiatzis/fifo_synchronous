@@ -177,41 +177,15 @@ class OutMon {
         std::shared_ptr<Scb> scb;
         // OutCoverage *cvg;
         std::shared_ptr<OutCoverage> cvg;
-        VerilatedVcdC * m_trace;
     public:
-        OutMon(VerilatedVcdC *m_trace,std::shared_ptr<Vsynchronous_fifo> dut, std::shared_ptr<Scb> scb, std::shared_ptr<OutCoverage> cvg){
+        OutMon(std::shared_ptr<Vsynchronous_fifo> dut, std::shared_ptr<Scb> scb, std::shared_ptr<OutCoverage> cvg){
             this->dut = dut;
             this->scb = scb;
             this->cvg = cvg;
-            this->m_trace = m_trace;
         }
 
         void monitor(){
             if(dut->f_rd_done == 1){
-
-
-                // m_trace->dump(sim_time);
-                // sim_time++;
-
-                // dut->i_clk_wr ^= 1;
-                // dut->i_clk_rd ^= 1;
-                // dut->eval();
-                // m_trace->dump(sim_time);
-                // sim_time++;
-
-                // dut->i_clk_wr ^= 1;
-                // dut->i_clk_rd ^= 1;
-                // dut->eval();
-                // m_trace->dump(sim_time);
-                // sim_time++;
-
-                // if (dut->i_clk_wr == 0) {
-                //    dut->i_clk_wr ^= 1;
-                //     dut->i_clk_rd ^= 1;
-                //     dut->eval();
-                //     m_trace->dump(sim_time);
-                //     sim_time++; 
-                // }
                 
                 OutTx *tx = new OutTx();
                 tx->o_data = dut->o_data;
@@ -290,7 +264,7 @@ int main(int argc, char** argv, char** env) {
     std::shared_ptr<InCoverage> inCoverage(new InCoverage());
     std::shared_ptr<OutCoverage> outCoverage(new OutCoverage());
     std::unique_ptr<InMon> inMon(new InMon(dut,scb,inCoverage));
-    std::unique_ptr<OutMon> outMon(new OutMon(m_trace,dut,scb,outCoverage));
+    std::unique_ptr<OutMon> outMon(new OutMon(dut,scb,outCoverage));
     std::unique_ptr<Sequence> sequence(new Sequence(inCoverage));
 
     while (outCoverage->is_full_coverage() == false) {
@@ -310,7 +284,6 @@ int main(int argc, char** argv, char** env) {
                 // tx = rndInTx(inCoverage);
                 tx = sequence->genTx();
 
-                // std::cout << "HEY" << std::endl;
 
                 // Pass the generated transaction item in the driver
                 //to convert it to pin wiggles
@@ -318,27 +291,18 @@ int main(int argc, char** argv, char** env) {
                 //a sequencer and a driver in a UVM tb
                 drv->drive(tx);
 
-                // std::cout << "yipee" << std::endl;
 
                 // Monitor the input interface
                 // also writes recovered transaction to
                 // input coverage and scoreboard
                 inMon->monitor();
 
-                // std::cout << "KAYEE" << std::endl;
-
                 // Monitor the output interface
                 // also writes recovered result (out transaction) to
                 // output coverage and scoreboard 
                 outMon->monitor();
-
-                // std::cout << "MOFO" << std::endl;
             }
         }
-        // end of positive edge processing
-
-        // m_trace->dump(sim_time);
-        // sim_time++;
     }
 
     m_trace->close();  
