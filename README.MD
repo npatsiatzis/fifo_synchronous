@@ -20,6 +20,6 @@
 - [cocotb](https://github.com/npatsiatzis/fifo_synchronous/tree/main/cocotb_sim)
 - [pyuvm](https://github.com/npatsiatzis/fifo_synchronous/tree/main/pyuvm_sim)
 - [UVM](https://github.com/npatsiatzis/fifo_synchronous/tree/main/uvm_sim)
-<!-- - [C++-based transactional tb (verilator)](https://github.com/npatsiatzis/fifo_synchronous/tree/main/verilator_sim) -->
+- [verilator](https://github.com/npatsiatzis/fifo_synchronous/tree/main/verilator_sim)
 
 

@@ -3,7 +3,7 @@
 
 module synchronous_fifo
     #(
-        parameter int G_WIDTH = 8,
+        parameter int G_WIDTH /*verilator public*/ = 8,
         parameter int G_DEPTH = 4
     )
 
@@ -21,7 +21,8 @@ module synchronous_fifo
     output logic o_overflow,
     output logic o_underflow,
     output logic o_full,
-    output logic o_empty
+    output logic o_empty,
+    output logic f_rd_done
     );
 
     logic [G_DEPTH : 0] r_addr_wr;
@@ -46,10 +47,14 @@ module synchronous_fifo
     always_ff @(posedge i_clk_rd) begin : rd_domain
         if(i_rst_rd) begin
             r_addr_rd <= '0;
+            f_rd_done <= 1'b0;
         end else begin
+            f_rd_done <= 1'b0;
             if(i_rd && !o_empty) begin
                 o_data <= mem[r_addr_rd[G_DEPTH -1 : 0]];
                 r_addr_rd <= r_addr_rd + 1;
+                f_rd_done <= 1'b1;
+
             end
         end
     end

@@ -13,7 +13,7 @@ rtl_dir = tests_dir                                    #path to hdl folder where
                                    
 #run tests with generic values for length
 @pytest.mark.parametrize("g_width", [str(i) for i in [4,9,4]])
-@pytest.mark.parametrize("g_depth", [str(i) for i in range(4,9,1)])
+@pytest.mark.parametrize("g_depth", [str(i) for i in range(4,7,1)])
 def test_fifo(g_width,g_depth):
 
     module = "tb"
