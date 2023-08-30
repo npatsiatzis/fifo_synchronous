@@ -59,27 +59,32 @@ module synchronous_fifo
         end
     end
 
-    always_comb begin : manage_over_under_flow
-        o_overflow = 1'b0;
-        if(o_full && i_wr)
-            o_overflow = 1'b1;
+    assign o_overflow = (o_full && i_wr) ? 1'b1 : 1'b0;
+    assign o_underflow = (o_empty && i_rd) ? 1'b1 : 1'b0;
+    // always_comb begin : manage_over_under_flow
+    //     o_overflow = 1'b0;
+    //     if(o_full && i_wr)
+    //         o_overflow = 1'b1;
 
-        o_underflow = 1'b0;
-        if(o_empty && i_rd)
-            o_underflow = 1'b1;
-    end
+    //     o_underflow = 1'b0;
+    //     if(o_empty && i_rd)
+    //         o_underflow = 1'b1;
+    // end
 
-    always_comb begin : manage_full_empty
-        r_fill_level = r_addr_wr - r_addr_rd;
-        if(r_fill_level == 0)
-            o_empty = 1'b1;
-        else
-            o_empty = 1'b0;
+    assign r_fill_level = r_addr_wr - r_addr_rd;
+    assign o_empty = (r_fill_level == 0) ? 1'b1 : 1'b0;
+    assign o_full = (r_fill_level == 2**G_DEPTH) ? 1'b1 : 1'b0;
+    // always_comb begin : manage_full_empty
+    //     r_fill_level = r_addr_wr - r_addr_rd;
+    //     if(r_fill_level == 0)
+    //         o_empty = 1'b1;
+    //     else
+    //         o_empty = 1'b0;
 
-        if(r_fill_level == 2**G_DEPTH)
-            o_full = 1'b1;
-        else
-            o_full = 1'b0;
-    end
+    //     if(r_fill_level == 2**G_DEPTH)
+    //         o_full = 1'b1;
+    //     else
+    //         o_full = 1'b0;
+    // end
 
 endmodule : synchronous_fifo
