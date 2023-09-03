@@ -37,6 +37,7 @@ class OutTx {
 class InCoverage{
     private:
         std::set <uint32_t> in_cvg;
+        int cvg_size = 0;
     
     public:
         void write_coverage(InTx *tx){
@@ -51,6 +52,10 @@ class InCoverage{
             // t = std::make_tuple(A,B);            
             // return in_cvg.find(t) == in_cvg.end();
             return in_cvg.find(A) == in_cvg.end();
+        }
+        bool is_full_coverage(){
+            // return cvg_size == (1 << (Vsynchronous_fifo_synchronous_fifo::G_WIDTH));
+            return in_cvg.size() == (1 << (Vsynchronous_fifo_synchronous_fifo::G_WIDTH));
         }
 };
 
@@ -224,7 +229,7 @@ class Sequence{
                 in->i_wr = rand() % 2;
                 in->i_rd = rand() % 2;  
 
-                while(cvg->is_covered(in->i_data) == false){
+                while(cvg->is_covered(in->i_data) == false && cvg->is_full_coverage() == false){
                     in->i_data = rand() % (1 << Vsynchronous_fifo_synchronous_fifo::G_WIDTH);   
                 }
                 return in;
@@ -271,6 +276,7 @@ int main(int argc, char** argv, char** env) {
     std::unique_ptr<Sequence> sequence(new Sequence(inCoverage));
 
     while (outCoverage->is_full_coverage() == false) {
+    // while(1) {
         // 0-> all 0s
         // 1 -> all 1s
         // 2 -> all random
@@ -290,7 +296,6 @@ int main(int argc, char** argv, char** env) {
                 // Generate a randomised transaction item 
                 // tx = rndInTx(inCoverage);
                 tx = sequence->genTx();
-
 
                 // Pass the generated transaction item in the driver
                 //to convert it to pin wiggles
