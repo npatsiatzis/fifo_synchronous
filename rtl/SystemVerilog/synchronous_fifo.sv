@@ -87,4 +87,25 @@ module synchronous_fifo
     //         o_full = 1'b0;
     // end
 
+
+                        /*          ######################      */
+                        /*          Assertions && Coverage      */
+                        /*          ######################      */
+    // check conditions after reset
+    assert_reset_wr : assert property(@(posedge i_clk_wr) $rose(i_rst_wr) |=> r_addr_wr ==0);
+    assert_reset_rd : assert property(@(posedge i_clk_rd) $rose(i_rst_rd) |=> r_addr_rd ==0);
+
+    //check fifo full and empty 
+    check_full : assert property (@(posedge i_clk_rd) r_fill_level == 2**G_DEPTH |-> o_full == 1'b1);
+    check_empty : assert property(@(posedge i_clk_rd) r_fill_level == 0 |-> o_empty == 1'b1);
+
+    //check that data are not pushed in FIFO when they shouldn't
+    check_push_overflow : assert property (@(posedge i_clk_wr) (i_wr && o_full && !i_rd) |=> $stable(r_addr_wr));
+    //check that data are not removed from FIFO when they shouldn't
+    check_pop_underflow : assert property (@(posedge i_clk_rd) (i_rd && o_empty && !i_wr) |=> $stable(r_addr_rd));
+
+    // check that data are pushed when they should 
+    check_push : assert property (@(posedge i_clk_wr) (i_wr && !o_full) |=> !($stable(r_addr_wr)));
+    // check that data are removed from FIFO when they should
+    check_pop : assert property (@(posedge i_clk_rd) (i_rd && !o_empty) |=> !($stable(r_addr_rd)));
 endmodule : synchronous_fifo
