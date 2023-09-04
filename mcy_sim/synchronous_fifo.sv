@@ -87,7 +87,6 @@ module synchronous_fifo
     //         o_full = 1'b0;
     // end
 
-
                         /*          ######################      */
                         /*          Assertions && Coverage      */
                         /*          ######################      */
