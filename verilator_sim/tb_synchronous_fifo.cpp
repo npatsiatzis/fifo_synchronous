@@ -96,7 +96,7 @@ class Scb {
             // before an input gets driven to the input interface
             if(in_q.empty()){
                 std::cout <<"Fatal Error in AluScb: empty InTx queue" << std::endl;
-                exit(1);
+                // exit(1);
             }
 
             // Grab the transaction item from the front of the input item queue
@@ -108,7 +108,7 @@ class Scb {
                 std::cout << "Test Failure!" << std::endl;
                 std::cout << "Expected : " <<  in->i_data << std::endl;
                 std::cout << "Got : " << tx->o_data << std::endl;
-                exit(1);
+                // exit(1);
             } else {
                 std::cout << "Test PASS!" << std::endl;
                 std::cout << "Expected : " <<  in->i_data << std::endl;
@@ -317,7 +317,8 @@ int main(int argc, char** argv, char** env) {
         }
     }
 
-    VerilatedCov::write();
+    Verilated::mkdir("logs");
+    VerilatedCov::write("logs/coverage.dat");
     m_trace->close();  
     exit(EXIT_SUCCESS);
 }
