@@ -3,7 +3,8 @@
 ![example workflow](https://github.com/npatsiatzis/fifo_synchronous/actions/workflows/formal.yml/badge.svg)
 ![example workflow](https://github.com/npatsiatzis/fifo_synchronous/actions/workflows/regression_pyuvm.yml/badge.svg)
 ![example workflow](https://github.com/npatsiatzis/fifo_synchronous/actions/workflows/coverage_pyuvm.yml/badge.svg)
-
+![example workflow](https://github.com/npatsiatzis/fifo_synchronous/actions/workflows/verilator_regression.yml/badge.svg)
+[![codecov](https://codecov.io/gh/npatsiatzis/fifo_synchronous/graph/badge.svg?token=443SHHMU5H)](https://codecov.io/gh/npatsiatzis/fifo_synchronous)
 
 ### synchronous FIFO RTL implementation
 

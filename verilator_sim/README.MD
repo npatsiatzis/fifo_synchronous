@@ -1,3 +1,5 @@
+![example workflow](https://github.com/npatsiatzis/fifo_synchronous/actions/workflows/verilator_regression.yml/badge.svg)
+
 ### synchronous FIFO RTL implementation
 
 - used to communicate data between 2 synchronous clock domains
