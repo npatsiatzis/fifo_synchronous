@@ -1,10 +1,10 @@
 // `begin_keywords "1800-2017";
-`default_nettype none
+// `default_nettype none
 
 module synchronous_fifo
     #(
         parameter int G_WIDTH /*verilator public*/ = 8,
-        parameter int G_DEPTH = 4
+        parameter int G_DEPTH /*verilator public*/= 10
     )
 
     (

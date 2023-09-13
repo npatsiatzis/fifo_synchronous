@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <memory>
 #include <set>
+#include <tuple>
 #include <deque>
 #include <verilated.h>
 #include <verilated_vcd_c.h>
@@ -31,49 +32,41 @@ class InTx {
 class OutTx {
     public:
         uint32_t o_data;
-};
-
-//in domain Coverage
-class InCoverage{
-    private:
-        std::set <uint32_t> in_cvg;
-        int cvg_size = 0;
-    
-    public:
-        void write_coverage(InTx *tx){
-            // std::tuple<uint32_t,uint32_t> t;
-            // t = std::make_tuple(tx->A,tx->B);
-            // in_cvg.insert(t);
-            in_cvg.insert(tx->i_data);
-        }
-
-        bool is_covered(uint32_t A){
-            // std::tuple<uint32_t,uint32_t> t;
-            // t = std::make_tuple(A,B);            
-            // return in_cvg.find(t) == in_cvg.end();
-            return in_cvg.find(A) == in_cvg.end();
-        }
-        bool is_full_coverage(){
-            // return cvg_size == (1 << (Vsynchronous_fifo_synchronous_fifo::G_WIDTH));
-            return in_cvg.size() == (1 << (Vsynchronous_fifo_synchronous_fifo::G_WIDTH));
-        }
+        uint32_t o_overflow;
+        uint32_t o_underflow;
 };
 
 //out domain Coverage
 class OutCoverage {
     private:
-        std::set <uint32_t> coverage;
+        std::set <uint32_t> o_data_coverage;
+        std::set <uint32_t> o_full_coverage;
+        std::set <uint32_t> o_empty_coverage;
         int cvg_size = 0;
 
     public:
         void write_coverage(OutTx* tx){
-            coverage.insert(tx->o_data); 
+            o_data_coverage.insert(tx->o_data); 
             cvg_size++;
+
+            o_full_coverage.insert(tx->o_overflow);
+            o_empty_coverage.insert(tx->o_underflow);
+        }
+
+
+        bool is_covered(uint32_t A){
+            return o_data_coverage.find(A) == o_data_coverage.end();
+        }
+        bool is_full_coverage_full_empty(){
+            if(o_full_coverage.size() == 2 && o_empty_coverage.size() == 2){
+                return true;
+            } else {
+                return false;
+            }
         }
 
         bool is_full_coverage(){
-            return cvg_size == (1 << (Vsynchronous_fifo_synchronous_fifo::G_WIDTH));
-            // return coverage.size() == (1 << (Vsynchronous_fifo_synchronous_fifo::G_WIDTH));
+            return o_data_coverage.size() == (1 << (Vsynchronous_fifo_synchronous_fifo::G_WIDTH));
         }
 };
 
@@ -157,12 +150,12 @@ class InMon {
         // Scb *scb;
         std::shared_ptr<Scb>  scb;
         // InCoverage *cvg;
-        std::shared_ptr<InCoverage> cvg;
+        // std::shared_ptr<InCoverage> cvg;
     public:
-        InMon(std::shared_ptr<Vsynchronous_fifo> dut, std::shared_ptr<Scb>  scb, std::shared_ptr<InCoverage> cvg){
+        InMon(std::shared_ptr<Vsynchronous_fifo> dut, std::shared_ptr<Scb>  scb){
             this->dut = dut;
             this->scb = scb;
-            this->cvg = cvg;
+            // this->cvg = cvg;
         }
 
         void monitor(){
@@ -171,12 +164,12 @@ class InMon {
                 tx->i_data = dut->i_data;
                 // then pass the transaction item to the scoreboard
                 scb->writeIn(tx);
-                cvg->write_coverage(tx);
+                // cvg->write_coverage(tx);
             }
         }
 };
 
-// ALU output interface monitor
+// output interface monitor
 class OutMon {
     private:
         // Vsynchronous_fifo *dut;
@@ -193,14 +186,15 @@ class OutMon {
         }
 
         void monitor(){
+            
+            OutTx *tx = new OutTx();
+            tx->o_data = dut->o_data;
+            tx->o_overflow = dut->o_overflow;
+            tx->o_underflow = dut->o_underflow;
+            cvg->write_coverage(tx);
             if(dut->f_rd_done == 1){
-                
-                OutTx *tx = new OutTx();
-                tx->o_data = dut->o_data;
-
                 // then pass the transaction item to the scoreboard
                 scb->writeOut(tx);
-                cvg->write_coverage(tx);
             }
         }
 };
@@ -215,26 +209,60 @@ class Sequence{
     private:
         InTx* in;
         // InCoverage *cvg;
-        std::shared_ptr<InCoverage> cvg;
+        std::shared_ptr<OutCoverage> cvg;
+        int state = 0;
+        int iter = 0;
     public:
-        Sequence(std::shared_ptr<InCoverage> cvg){
+        Sequence(std::shared_ptr<OutCoverage> cvg){
             this->cvg = cvg;
         }
 
         InTx* genTx(){
-            in = new InTx();
-            // std::shared_ptr<InTx> in(new InTx());
-            if(rand()%5 == 0){
-                in->i_data = rand() % (1 << Vsynchronous_fifo_synchronous_fifo::G_WIDTH);  
-                in->i_wr = rand() % 2;
-                in->i_rd = rand() % 2;  
 
-                while(cvg->is_covered(in->i_data) == false && cvg->is_full_coverage() == false){
-                    in->i_data = rand() % (1 << Vsynchronous_fifo_synchronous_fifo::G_WIDTH);   
+
+            switch(state) {
+                case 0: {
+                    if(cvg->is_full_coverage() == true){
+                        state = 1;
+                    }
+
+                    in = new InTx();
+                    // std::shared_ptr<InTx> in(new InTx());
+                    if(rand()%5 == 0){
+                        in->i_data = rand() % (1 << Vsynchronous_fifo_synchronous_fifo::G_WIDTH);  
+                        in->i_wr = rand() % 2;
+                        in->i_rd = rand() % 2;  
+
+                        while(cvg->is_covered(in->i_data) == false){
+                            in->i_data = rand() % (1 << Vsynchronous_fifo_synchronous_fifo::G_WIDTH);   
+                        }
+                        return in;
+                    } else {
+                        return NULL;
+                    }
+                    break;
                 }
-                return in;
-            } else {
-                return NULL;
+                case 1: {
+                    in = new InTx();
+                    iter++;
+                    if(iter<2*(1 << Vsynchronous_fifo_synchronous_fifo::G_DEPTH)){
+                        in->i_data = rand() % (1 << Vsynchronous_fifo_synchronous_fifo::G_WIDTH);  
+                        in->i_wr = 1;
+                        in->i_rd = 0;  
+                        return in;
+                    } else {
+                        in->i_data = rand() % (1 << Vsynchronous_fifo_synchronous_fifo::G_WIDTH);  
+                        in->i_wr = 0;
+                        in->i_rd = 1; 
+                        return in; 
+                    }
+
+                    break;
+                }
+                default: {
+                    state = 0;
+                    return NULL;
+                }
             }
         }
 };
@@ -269,13 +297,13 @@ int main(int argc, char** argv, char** env) {
     // Here we create the driver, scoreboard, input and output monitor and coverage blocks
     std::unique_ptr<InDrv> drv(new InDrv(dut));
     std::shared_ptr<Scb> scb(new Scb());
-    std::shared_ptr<InCoverage> inCoverage(new InCoverage());
+    // std::shared_ptr<InCoverage> inCoverage(new InCoverage());
     std::shared_ptr<OutCoverage> outCoverage(new OutCoverage());
-    std::unique_ptr<InMon> inMon(new InMon(dut,scb,inCoverage));
+    std::unique_ptr<InMon> inMon(new InMon(dut,scb));
     std::unique_ptr<OutMon> outMon(new OutMon(dut,scb,outCoverage));
-    std::unique_ptr<Sequence> sequence(new Sequence(inCoverage));
+    std::unique_ptr<Sequence> sequence(new Sequence(outCoverage));
 
-    while (outCoverage->is_full_coverage() == false) {
+    while (outCoverage->is_full_coverage() == false || outCoverage->is_full_coverage_full_empty() == false) {
     // while(1) {
         // 0-> all 0s
         // 1 -> all 1s
