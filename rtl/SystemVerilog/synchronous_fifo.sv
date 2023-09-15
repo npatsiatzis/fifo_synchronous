@@ -141,5 +141,18 @@ module synchronous_fifo
             else $warning("Test Failure! ASSERTION FAILED!");
         check_underflow_negative : assert property (@(posedge i_clk_rd) !o_empty |-> !o_underflow)
             else $warning("Test Failure! ASSERTION FAILED!");
+        
+        // check assignments 
+        check_overflow : assert property (@(posedge i_clk_wr) o_overflow == i_wr & o_full);
+            else $warning("Test Failure! ASSERTION FAILED!");
+        check_underflow : assert property (@(posedge i_clk_rd) o_underflow == i_rd & o_empty);
+            else $warning("Test Failure! ASSERTION FAILED!");
+        check_rfill : assert property (@(posedge i_clk_wr) r_fill_level == (r_addr_wr - r_addr_rd));
+            else $warning("Test Failure! ASSERTION FAILED!");
+        check_full : assert property (@(posedge i_clk_wr) o_full == (r_fill_level == 2**G_DEPTH));
+            else $warning("Test Failure! ASSERTION FAILED!");
+        check_empty : assert property (@(posedge i_clk_rd) o_empty == (r_fill_level == 0));
+            else $warning("Test Failure! ASSERTION FAILED!");
+
         `endif
 endmodule : synchronous_fifo
