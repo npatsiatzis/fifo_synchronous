@@ -30,7 +30,7 @@ waveform.vcd: ./obj_dir/V$(TOPLEVEL)
 .stamp.verilate: $(RTL_DIR)/$(TOPLEVEL).v $(MODULE)
 	@echo
 	@echo "### VERILATING ###"
-	verilator -DUSE_VERILATOR -Wno-fatal --build -j --coverage --trace --trace-coverage -Wall --trace --x-assign unique --x-initial unique  -cc $(RTL_DIR)/$(TOPLEVEL).v --exe $(MODULE)
+	verilator -DUSE_VERILATOR --assert -Wno-fatal --build -j --coverage --trace --trace-coverage -Wall --trace --x-assign unique --x-initial unique  -cc $(RTL_DIR)/$(TOPLEVEL).v --exe $(MODULE)
 	@touch .stamp.verilate
 
 .PHONY: clean
