@@ -13,15 +13,17 @@
 - configurable FIFO depth and width
 - logic for generating empty/full, overflow/underflow falgs
 
--- RTL code in:
-- [VHDL](https://github.com/npatsiatzis/fifo_synchronous/tree/main/rtl/VHDL)
-- [SystemVerilog](https://github.com/npatsiatzis/fifo_synchronous/tree/main/rtl/SystemVerilog)
+### Repo Structure
 
--- Functional verification with methodologies:
-- [cocotb](https://github.com/npatsiatzis/fifo_synchronous/tree/main/cocotb_sim)
-- [pyuvm](https://github.com/npatsiatzis/fifo_synchronous/tree/main/pyuvm_sim)
-- [UVM](https://github.com/npatsiatzis/fifo_synchronous/tree/main/uvm_sim)
-- [verilator](https://github.com/npatsiatzis/fifo_synchronous/tree/main/verilator_sim)
-- [mcy](https://github.com/npatsiatzis/fifo_synchronous/tree/main/mcy_sim)
+This is a short tabular description of the contents of each folder in the repo.
 
+| Folder | Description |
+| ------ | ------ |
+| [rtl/SystemVerilog](https://github.com/npatsiatzis/fifo_synchronous/tree/main/rtl/SystemVerilog) | SV RTL implementation files |
+| [rtl/VHDL](https://github.com/npatsiatzis/fifo_synchronous/tree/main/rtl/VHDL) | VHDL RTL implementation files |
+| [cocotb_sim](https://github.com/npatsiatzis/fifo_synchronous/tree/main/cocotb_sim) | Functional Verification with CoCoTB (Python-based) |
+| [pyuvm_sim](https://github.com/npatsiatzis/fifo_synchronous/tree/main/pyuvm_sim) | Functional Verification with pyUVM (Python impl. of UVM standard) |
+| [uvm_sim](https://github.com/npatsiatzis/fifo_synchronous/tree/main/uvm_sim) | Functional Verification with UVM (SV impl. of UVM standard) |
+| [verilator_sim](https://github.com/npatsiatzis/fifo_synchronous/tree/main/verilator_sim) | Functional Verification with Verilator (C++ based) |
+| [mcy_sim](https://github.com/npatsiatzis/fifo_synchronous/tree/main/mcy_sim) | Mutation Coverage Testing of Verilator tb, using  [YoysHQ/mcy](https://github.com/YosysHQ/oss-cad-suite-build)|
 
