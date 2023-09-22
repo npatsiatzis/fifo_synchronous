@@ -5,12 +5,13 @@
 #include <memory>
 #include <set>
 #include <tuple>
+#include <map>
 #include <deque>
 #include <verilated.h>
 #include <verilated_vcd_c.h>
 #include <verilated_cov.h>
-#include "Vsynchronous_fifo.h"
-#include "Vsynchronous_fifo_synchronous_fifo.h"   //to get parameter values, after they've been made visible in SV
+#include "Vtop.h"
+#include "Vtop_top.h"   //to get parameter values, after they've been made visible in SV
 
 
 #define MAX_SIM_TIME 300
@@ -66,7 +67,7 @@ class OutCoverage {
         }
 
         bool is_full_coverage(){
-            return o_data_coverage.size() == (1 << (Vsynchronous_fifo_synchronous_fifo::G_WIDTH));
+            return o_data_coverage.size() == (1 << (Vtop_top::G_WIDTH));
         }
 };
 
@@ -118,10 +119,10 @@ class Scb {
 // interface driver
 class InDrv {
     private:
-        // Vsynchronous_fifo *dut;
-        std::shared_ptr<Vsynchronous_fifo> dut;
+        // Vtop *dut;
+        std::shared_ptr<Vtop> dut;
     public:
-        InDrv(std::shared_ptr<Vsynchronous_fifo> dut){
+        InDrv(std::shared_ptr<Vtop> dut){
             this->dut = dut;
         }
 
@@ -145,14 +146,14 @@ class InDrv {
 // input interface monitor
 class InMon {
     private:
-        // Vsynchronous_fifo *dut;
-        std::shared_ptr<Vsynchronous_fifo> dut;
+        // Vtop *dut;
+        std::shared_ptr<Vtop> dut;
         // Scb *scb;
         std::shared_ptr<Scb>  scb;
         // InCoverage *cvg;
         // std::shared_ptr<InCoverage> cvg;
     public:
-        InMon(std::shared_ptr<Vsynchronous_fifo> dut, std::shared_ptr<Scb>  scb){
+        InMon(std::shared_ptr<Vtop> dut, std::shared_ptr<Scb>  scb){
             this->dut = dut;
             this->scb = scb;
             // this->cvg = cvg;
@@ -172,14 +173,14 @@ class InMon {
 // output interface monitor
 class OutMon {
     private:
-        // Vsynchronous_fifo *dut;
-        std::shared_ptr<Vsynchronous_fifo> dut;
+        // Vtop *dut;
+        std::shared_ptr<Vtop> dut;
         // Scb *scb;
         std::shared_ptr<Scb> scb;
         // OutCoverage *cvg;
         std::shared_ptr<OutCoverage> cvg;
     public:
-        OutMon(std::shared_ptr<Vsynchronous_fifo> dut, std::shared_ptr<Scb> scb, std::shared_ptr<OutCoverage> cvg){
+        OutMon(std::shared_ptr<Vtop> dut, std::shared_ptr<Scb> scb, std::shared_ptr<OutCoverage> cvg){
             this->dut = dut;
             this->scb = scb;
             this->cvg = cvg;
@@ -229,12 +230,12 @@ class Sequence{
                     in = new InTx();
                     // std::shared_ptr<InTx> in(new InTx());
                     if(rand()%5 == 0){
-                        in->i_data = rand() % (1 << Vsynchronous_fifo_synchronous_fifo::G_WIDTH);  
+                        in->i_data = rand() % (1 << Vtop_top::G_WIDTH);  
                         in->i_wr = rand() % 2;
                         in->i_rd = rand() % 2;  
 
                         while(cvg->is_covered(in->i_data) == false){
-                            in->i_data = rand() % (1 << Vsynchronous_fifo_synchronous_fifo::G_WIDTH);   
+                            in->i_data = rand() % (1 << Vtop_top::G_WIDTH);   
                         }
                         return in;
                     } else {
@@ -245,13 +246,13 @@ class Sequence{
                 case 1: {
                     in = new InTx();
                     iter++;
-                    if(iter<2*(1 << Vsynchronous_fifo_synchronous_fifo::G_DEPTH)){
-                        in->i_data = rand() % (1 << Vsynchronous_fifo_synchronous_fifo::G_WIDTH);  
+                    if(iter<2*(1 << Vtop_top::G_DEPTH)){
+                        in->i_data = rand() % (1 << Vtop_top::G_WIDTH);  
                         in->i_wr = 1;
                         in->i_rd = 0;  
                         return in;
                     } else {
-                        in->i_data = rand() % (1 << Vsynchronous_fifo_synchronous_fifo::G_WIDTH);  
+                        in->i_data = rand() % (1 << Vtop_top::G_WIDTH);  
                         in->i_wr = 0;
                         in->i_rd = 1; 
                         return in; 
@@ -268,7 +269,7 @@ class Sequence{
 };
 
 
-void dut_reset (std::shared_ptr<Vsynchronous_fifo> dut, vluint64_t &sim_time){
+void dut_reset (std::shared_ptr<Vtop> dut, vluint64_t &sim_time){
     dut->i_rst_wr = 0;
     dut->i_rst_rd = 0;
     if(sim_time >= 3 && sim_time < VERIF_START_TIME -1){
@@ -280,12 +281,12 @@ void dut_reset (std::shared_ptr<Vsynchronous_fifo> dut, vluint64_t &sim_time){
 int main(int argc, char** argv, char** env) {
     srand (time(NULL));
     Verilated::commandArgs(argc, argv);
-    // Vsynchronous_fifo *dut = new Vsynchronous_fifo;
+    // Vtop *dut = new Vtop;
 
     std::shared_ptr<VerilatedContext> contextp{new VerilatedContext};
-    std::shared_ptr<Vsynchronous_fifo> dut(new Vsynchronous_fifo{contextp.get(), "TOP"});
+    std::shared_ptr<Vtop> dut(new Vtop{contextp.get(), "TOP"});
 
-    // std::shared_ptr<Vsynchronous_fifo> dut(new Vsynchronous_fifo);
+    // std::shared_ptr<Vtop> dut(new Vtop);
 
     Verilated::traceEverOn(true);
     VerilatedVcdC *m_trace = new VerilatedVcdC;
