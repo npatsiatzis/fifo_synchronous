@@ -9,6 +9,7 @@ import cocotb
 import pyuvm
 from utils import FifoBfm
 from cocotb_coverage.coverage import CoverCross,CoverPoint,coverage_db
+import numpy as np
 
 
 g_width = int(cocotb.top.g_width)
@@ -30,31 +31,32 @@ def number_cover(dut):
     pass
 
 class crv_inputs(crv.Randomized):
-    def __init__(self,wr,rd,data):
+    def __init__(self,data):
         crv.Randomized.__init__(self)
-        self.wr = wr
-        self.rd = rd 
         self.data = data
-        self.add_rand("wr",list(range(2)))
-        self.add_rand("rd",list(range(2)))
         self.add_rand("data",list(range(2**g_width)))
 
 # Sequence classes
 class SeqItem(uvm_sequence_item):
 
-    def __init__(self, name, wr,rd,data):
+    def __init__(self, name,data):
         super().__init__(name)
-        self.i_crv = crv_inputs(wr,rd,data)
+        self.i_crv = crv_inputs(data)
+        self.wr = 0 
+        self. rd = 0
 
     def randomize_operands(self):
         self.i_crv.randomize()
+        # draw mem wr and rd signals from specified binomial distributions
+        self.wr = int(np.random.binomial(1,0.8,1)[0])
+        self.rd = int(np.random.binomial(1,0.3,1)[0])
 
 
 class RandomSeq(uvm_sequence):
     async def body(self):
         while full_cross != True:
         # while len(covered_values) != 2**g_width:
-            data_tr = SeqItem("data_tr", None, None,None)
+            data_tr = SeqItem("data_tr", None)
             await self.start_item(data_tr)
             data_tr.randomize_operands()
             # while(data_tr.i_crv.data in covered_values):
@@ -63,15 +65,6 @@ class RandomSeq(uvm_sequence):
 
             await self.finish_item(data_tr)
 
-
-# class ReadSeq(uvm_sequence):
-#     async def body(self):
-
-#         #read enough to cause underflow
-#         for i in range(2**g_depth+100):
-#             data_tr = SeqItem("data_tr",0,1,0)
-#             await self.start_item(data_tr)
-#             await self.finish_item(data_tr)
 
 class TestAllSeq(uvm_sequence):
 
@@ -99,9 +92,9 @@ class Driver(uvm_driver):
         await self.launch_tb()
         while True:
             data = await self.seq_item_port.get_next_item()
-            await self.bfm.send_data((data.i_crv.wr, data.i_crv.rd,data.i_crv.data))
+            await self.bfm.send_data((data.wr, data.rd,data.i_crv.data))
             await RisingEdge(self.bfm.dut.i_clk_wr)
-            if(data.i_crv.rd == 1 and self.bfm.dut.o_empty.value == 0):
+            if(data.rd == 1 and self.bfm.dut.o_empty.value == 0):
                 result = await self.bfm.get_result()
                 self.ap.write(result)
                 data.result = result
