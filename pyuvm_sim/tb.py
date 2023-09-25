@@ -33,8 +33,16 @@ def number_cover(dut):
 class crv_inputs(crv.Randomized):
     def __init__(self,data):
         crv.Randomized.__init__(self)
+        self.wr = 0
+        self.rd = 0
         self.data = data
+        self._distr_wr = int(np.random.binomial(1,0.8,1)[0])
+        self._distr_rd = int(np.random.binomial(1,0.3,1)[0])
+        self.add_rand("wr",list(range(2)))
+        self.add_rand("rd",list(range(2)))
         self.add_rand("data",list(range(2**g_width)))
+        self.add_constraint(lambda wr: wr == self._distr_wr)
+        self.add_constraint(lambda rd: rd == self._distr_rd)
 
 # Sequence classes
 class SeqItem(uvm_sequence_item):
@@ -42,14 +50,9 @@ class SeqItem(uvm_sequence_item):
     def __init__(self, name,data):
         super().__init__(name)
         self.i_crv = crv_inputs(data)
-        self.wr = 0 
-        self. rd = 0
 
     def randomize_operands(self):
         self.i_crv.randomize()
-        # draw mem wr and rd signals from specified binomial distributions
-        self.wr = int(np.random.binomial(1,0.8,1)[0])
-        self.rd = int(np.random.binomial(1,0.3,1)[0])
 
 
 class RandomSeq(uvm_sequence):
@@ -92,9 +95,9 @@ class Driver(uvm_driver):
         await self.launch_tb()
         while True:
             data = await self.seq_item_port.get_next_item()
-            await self.bfm.send_data((data.wr, data.rd,data.i_crv.data))
+            await self.bfm.send_data((data.i_crv.wr, data.i_crv.rd,data.i_crv.data))
             await RisingEdge(self.bfm.dut.i_clk_wr)
-            if(data.rd == 1 and self.bfm.dut.o_empty.value == 0):
+            if(data.i_crv.rd == 1 and self.bfm.dut.o_empty.value == 0):
                 result = await self.bfm.get_result()
                 self.ap.write(result)
                 data.result = result
