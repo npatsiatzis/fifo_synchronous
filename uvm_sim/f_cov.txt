@@ -1,0 +1,121 @@
++++++++++++++++++++++++++++++++++++++++++++++
+++++++++++       REPORT INFO       ++++++++++
++++++++++++++++++++++++++++++++++++++++++++++
+
+
+SUMMARY
+===============================================
+|     Property     |          Value           |
+===============================================
+| User             | runner                   |
+| Host             | 07c45b03b25c             |
+| Tool             | Riviera-PRO 2022.04      |
+| Report file      | /home/runner/f_cov.txt   |
+| Report date      | 2023-09-30 01:38         |
+| Report arguments | -verbose                 |
+| Input file       | /home/runner/fcover.acdb |
+| Input file date  | 2023-09-30 01:38         |
+| Number of tests  | 1                        |
+===============================================
+
+
+TEST DETAILS
+==============================================
+| Property |              Value              |
+==============================================
+| Test     | fcover.acdb:fcover              |
+| Status   | Ok                              |
+| Args     | asim +access+r                  |
+| Simtime  | 10310 ns                        |
+| Cputime  | 6.255 s                         |
+| Seed     | 1                               |
+| Date     | 2023-09-30 01:38                |
+| User     | runner                          |
+| Host     | 07c45b03b25c                    |
+| Host os  | Linux64                         |
+| Tool     | Riviera-PRO 2022.04 (simulator) |
+==============================================
+
+
++++++++++++++++++++++++++++++++++++++++++++++
+++++++++++     DESIGN HIERARCHY    ++++++++++
++++++++++++++++++++++++++++++++++++++++++++++
+
+
+CUMULATIVE SUMMARY
+=============================================
+|    Coverage Type    | Weight | Hits/Total |
+=============================================
+| Covergroup Coverage |      1 |   100.000% |
+|---------------------|--------|------------|
+| Types               |        |      1 / 1 |
+=============================================
+CUMULATIVE INSTANCE-BASED COVERAGE: 100.000%
+COVERED INSTANCES: 1 / 1
+FILES: 1
+
+
+CLASS - /\package testbench_pkg\/rand_sequence : work.testbench_pkg/\testbench_pkg rand_sequence \
+
+
+    SUMMARY
+    =============================================
+    |    Coverage Type    | Weight | Hits/Total |
+    =============================================
+    | Covergroup Coverage |      1 |   100.000% |
+    |---------------------|--------|------------|
+    | Types               |        |      1 / 1 |
+    =============================================
+    WEIGHTED AVERAGE LOCAL: 100.000%
+
+
+    COVERGROUP COVERAGE
+    ==================================================================================
+    |                   Covergroup                   |   Hits   |  Goal /  | Status  |
+    |                                                |          | At Least |         |
+    ==================================================================================
+    | TYPE /\package testbench_pkg\/rand_sequence/cg | 100.000% | 100.000% | Covered |
+    ==================================================================================
+
+
++++++++++++++++++++++++++++++++++++++++++++++
+++++++++++       DESIGN UNITS      ++++++++++
++++++++++++++++++++++++++++++++++++++++++++++
+
+
+CUMULATIVE SUMMARY
+=============================================
+|    Coverage Type    | Weight | Hits/Total |
+=============================================
+| Covergroup Coverage |      1 |   100.000% |
+|---------------------|--------|------------|
+| Types               |        |      1 / 1 |
+=============================================
+CUMULATIVE DESIGN-BASED COVERAGE: 100.000%
+COVERED DESIGN UNITS: 1 / 1
+FILES: 1
+
+
+CLASS - work.testbench_pkg/\testbench_pkg rand_sequence \
+
+
+    SUMMARY
+    =============================================
+    |    Coverage Type    | Weight | Hits/Total |
+    =============================================
+    | Covergroup Coverage |      1 |   100.000% |
+    |---------------------|--------|------------|
+    | Types               |        |      1 / 1 |
+    =============================================
+    WEIGHTED AVERAGE: 100.000%
+
+
+    COVERGROUP COVERAGE
+    ==================================================================================
+    |                   Covergroup                   |   Hits   |  Goal /  | Status  |
+    |                                                |          | At Least |         |
+    ==================================================================================
+    | TYPE /\package testbench_pkg\/rand_sequence/cg | 100.000% | 100.000% | Covered |
+    ==================================================================================
+
+
