@@ -103,6 +103,12 @@ vunit formal_test(synchronous_fifo(arch)) {
 	--buffered data validity pattern, check that o_data holds correct value in a read transaction
 	check_o_data_after_rd: assert always (({i_rd and (not o_empty)} |=> {o_data = mem(to_integer(prev(w_addr_r)))}) abort i_rst_rd);
 
+	--check write & read at empty fifo :
+	check_empty_write_read : assert always (({i_wr and i_rd and o_empty} |=> {(r_addr_w = prev(r_addr_w) +1) and (o_empty = '0') and (r_addr_r = prev(r_addr_r))})abort i_rst_wr);
+
+	--check write & read at full fifo
+	check_full_write_read : assert always (({i_wr and i_rd and o_full} |=> {(r_addr_w = prev(r_addr_w)) and (o_full = '0') and (r_addr_r = prev(r_addr_r)+1)})abort i_rst_wr);
+
 	--check that we are never in illegal state  
 	check_illegal_state: assert never {wr_state = S4};
 
@@ -205,6 +211,16 @@ vunit formal_test(synchronous_fifo(arch)) {
 	------------------
 	--COVER PROPERTIES
 	------------------
+	--make sure that reset is possible
+	cover_rst_wr : cover {i_rst_wr = '1'};
+	cover_rst_rd : cover {i_rst_rd = '1'};
+
+	--cover write & read at empty fifo :
+	cover_empty_write_read : cover {i_wr and i_rd and o_empty; true; (r_addr_w = prev(r_addr_w) +1) and (o_empty = '0') and (r_addr_r = prev(r_addr_r))};
+
+	--cover write & read at full fifo
+	cover_full_write_read : cover {i_wr and i_rd and o_full; true; (r_addr_w = prev(r_addr_w)) and (o_full = '0') and (r_addr_r = prev(r_addr_r)+1)};
+
 
 	--cover the act of writting data to one location and then later reading
 	--that location and recovering this data
